@@ -1,0 +1,347 @@
+<%--
+ =================================================================
+  Tealium UDO - Build Data Layer
+  
+  Note: Reference TealiumUDO.jsp for configuration details
+ =================================================================
+--%>
+
+<%-- Read Tealium configuration info from database "storeconf" table entries --%>
+<%-- cachedOnlineStoreMap defined in in include file= "../Common/EnvironmentSetup.jspf" --%>
+<c:set var="key1" value="store/${storeId}/online_store"/>
+<c:set var="onlineStore" value="${cachedOnlineStoreMap[key1]}"/>
+<c:if test="${empty onlineStore}">
+	<wcf:rest var="queryStoreInfoResult" url="store/{storeId}/online_store" scope="request" cached="true">
+		<wcf:var name="storeId" value="${storeId}" encode="true"/>
+	</wcf:rest>
+	<c:set var="onlineStore" value="${queryStoreInfoResult.resultList[0]}"/>
+	<wcf:set target = "${cachedOnlineStoreMap}" key="${key1}" value="${onlineStore}"/>
+</c:if>
+
+<c:set var="tealiumAccount" value="${cachedOnlineStoreMap[key1].userData['wc.tealium.account']}" />
+<c:set var="tealiumProfile" value="${cachedOnlineStoreMap[key1].userData['wc.tealium.profile']}" />
+<c:set var="tealiumEnvironment" value="${cachedOnlineStoreMap[key1].userData['wc.tealium.environment']}" />
+
+<c:if test="${ empty tealiumAccount or empty tealiumProfile}">
+	<c:set var="tealiumAccount" value="undefined" />
+	<c:set var="tealiumProfile" value="undefined" />
+</c:if>
+<%-- Can I use "env_inPreview" to determine if tealiumEnvironment should switch to "dev"? --%>
+<c:if test="${ empty tealiumEnvironment}">
+	<c:set var="tealiumEnvironment" value="dev" />
+</c:if>
+<c:set var="tealiumUDO" value="{}"/>
+
+<%
+/* 
+ * Tealium Init
+ * Creates: tealiumHelper and dataLayer objects that are used to render final JSON structure for utag_data object in JavaScript
+ * Requires: "tealium_udo_helper_1_2_0a.jar" or later in "/Stores/WebContent/WEB-INF/lib/" directory
+*/
+TealiumHelper tealiumHelper = new TealiumHelper( (String)pageContext.getAttribute("tealiumAccount"), (String)pageContext.getAttribute("tealiumProfile"), (String)pageContext.getAttribute("tealiumEnvironment") );
+tealiumHelper.assumePageTypeUDO("generic").mayHaveStringFields(EnumSet.of(TealiumHelper.UDOOptions.WRITE_IF_EMPTY_OR_NULL),"page_name", "page_type", "site_currency", "site_region");
+tealiumHelper.assumePageTypeUDO("generic").setCanAddFieldsOnTheFly(true);
+
+UDO dataLayer =	tealiumHelper.createDefaultUDO(TealiumHelper.PrebuiltUDOPageTypes.HOME);
+%>
+<%-- Get results of queries already executed (on specific pages) --%>
+<%-- Take advantage of previous query in request scope (i.e. "IBM_findProductByIds_Summary_WithNoEntitlementCheck") --%>
+<%--
+<c:if test="${not empty order or not empty categoryId}">
+	<c:set var="key1" value="search/resources/store/${storeId}/categoryview/byId/${categoryId}" />
+	<c:forEach items="${requestScope}" var="r">
+		<c:if test="${fn:contains(r.key, key1)}">
+			<c:set var="tmpCategoryView" value="${ r.value.catalogGroupView[0] }" scope="request" />
+		</c:if>
+	</c:forEach>
+</c:if>
+--%>
+	
+<%-- Generic Content (and Home) Page --%>
+<c:set var="tealiumUDO_pageName" value="${fn:toLowerCase(pageName)}" scope="request" />
+<c:set var="tealiumUDO_pageCategory" value="${fn:toLowerCase(pageCategory)}" scope="request" />
+<c:set var="tealiumUDO_pageType" value="${fn:toLowerCase(pageGroup)}" scope="request" />
+<c:set var="tealiumUDO_viewTaskName" value="${viewTaskName}" scope="request" />
+<c:set var="tealiumUDO_store" value="${storeName}" scope="request" />
+<c:set var="tealiumUDO_storeId" value="${storeId}" scope="request" />
+<c:set var="tealiumUDO_siteRegion" value="${locale.country}" scope="request" />
+<c:set var="tealiumUDO_siteCurrency" value="${env_currencyCode}" scope="request" />
+<c:set var="tealiumUDO_breadCrumb" value="${breadCrumbList}" scope="request" />
+
+<c:if test="${ not empty categoryId }">
+	<c:set var="key1" value="categoryview/byId/${WCParam.categoryId}"/>
+	<%-- cachedCategoryViewMap defined in in include file= "../Common/EnvironmentSetup.jspf" --%>
+	<c:set var="catGroupDetailsView" value="${cachedCategoryViewMap[key1]}"/>
+	<c:if test="${empty catGroupDetailsView}">
+		<wcf:rest var="catGroupDetailsView" url="${searchHostNamePath}${searchContextPath}/store/${WCParam.storeId}/categoryview/byId/${WCParam.categoryId}" >	
+			<wcf:param name="langId" value="${langId}"/>
+			<wcf:param name="currency" value="${env_currencyCode}"/>
+			<wcf:param name="responseFormat" value="json"/>		
+			<wcf:param name="catalogId" value="${WCParam.catalogId}"/>
+			<c:forEach var="contractId" items="${env_activeContractIds}">
+				<wcf:param name="contractId" value="${contractId}"/>
+			</c:forEach>
+		</wcf:rest>
+		<wcf:set target = "${cachedCategoryViewMap}" key="${key1}" value="${catGroupDetailsView}"/>
+	</c:if>
+	<c:set var="tealiumUDO_pageCategoryName" value="${cachedCategoryViewMap[key1].catalogGroupView[0].identifier}" scope="request"/>
+</c:if>
+
+<c:if test="${ empty tealiumUDO_pageName}">
+	<c:set var="tealiumUDO_pageName" value="${fn:toLowerCase(requestURI)}" scope="request" />
+</c:if>
+<c:if test="${ empty tealiumUDO_pageCategory}">
+	<c:set var="tealiumUDO_pageCategory" value="content" scope="request" />
+</c:if>
+<c:if test="${ empty tealiumUDO_pageType}">
+	<c:set var="tealiumUDO_pageType" value="content" scope="request" />
+</c:if>
+<c:if test="${ empty tealiumUDO_pageCategoryName}">
+	<c:set var="tealiumUDO_pageCategoryName" value="" scope="request" />
+	<%-- A fallback for Page Category --%>
+	<c:if test="${ not empty emsNameLocalPrefix }">
+		<c:set var="tealiumUDO_pageCategoryName" value="${emsNameLocalPrefix}" scope="request" />
+	</c:if>
+</c:if>
+<c:if test="${ empty tealiumUDO_breadCrumb}">
+	<c:set var="tealiumUDO_breadCrumb" value="" scope="request" />
+</c:if>
+<%
+dataLayer.setValue(TealiumHelper.HomePageUDO.PredefinedUDOFields.PAGE_TYPE, (String)request.getAttribute("tealiumUDO_pageType"))
+	     .setValue(TealiumHelper.HomePageUDO.PredefinedUDOFields.SITE_REGION, (String)request.getAttribute("tealiumUDO_siteRegion"))
+		 .setValue(TealiumHelper.HomePageUDO.PredefinedUDOFields.SITE_CURRENCY, (String)request.getAttribute("tealiumUDO_siteCurrency"))
+		 .setValue(TealiumHelper.CategoryPageUDO.PredefinedUDOFields.PAGE_CATEGORY_NAME, (String)request.getAttribute("tealiumUDO_pageCategoryName"))
+		 .setValue("page_category", (String)request.getAttribute("tealiumUDO_pageCategory"))
+		 .setValue("view_task_name", (String)request.getAttribute("tealiumUDO_viewTaskName"))
+		 .setValue("bread_crumb", (String)request.getAttribute("tealiumUDO_breadCrumb"))		 
+		 .setValue("store_name", (String)request.getAttribute("tealiumUDO_store"))
+		 .setValue("store_id", (String)request.getAttribute("tealiumUDO_storeId").toString());
+%>
+<%-- Adjust page_type value based on page_category --%>
+<c:if test="${ tealiumUDO_pageCategory == 'checkout'}">
+<%
+        dataLayer.setValue(TealiumHelper.HomePageUDO.PredefinedUDOFields.PAGE_TYPE, "checkout");
+%>
+</c:if>
+<%-- Search Page --%>
+<c:if test="${ not empty searchTerm && tealiumUDO_pageType == 'search'}">
+	<c:set var="tealiumUDO_searchKeyword" value="${originalSearchTerm}" scope="request"/>
+	<c:set var="tealiumUDO_searchResults" value="${originalTotalSearchCount}" scope="request"/>
+	<c:set var="tealiumUDO_searchKeywordDisplayed" value="${searchTerm}" scope="request"/>
+	<c:set var="tealiumUDO_searchResultsDisplayed" value="${totalSearchCount}" scope="request"/>
+	<%
+        dataLayer.setValue(TealiumHelper.SearchPageUDO.PredefinedUDOFields.SEARCH_KEYWORD, (String)request.getAttribute("tealiumUDO_searchKeyword"))
+				 .setValue(TealiumHelper.SearchPageUDO.PredefinedUDOFields.SEARCH_RESULTS, (String)request.getAttribute("tealiumUDO_searchResults").toString())
+				 .setValue("search_keyword_displayed", (String)request.getAttribute("tealiumUDO_searchKeywordDisplayed"))
+				 .setValue("search_results_displayed", (String)request.getAttribute("tealiumUDO_searchResultsDisplayed").toString());
+    %>
+</c:if>
+
+<%-- Product Detail Page --%>
+<c:if test="${ not empty productId && tealiumUDO_pageType == 'product'}">
+
+	<%-- emsNameLocalPrefix is previously set in ProductDisplay.jsp --%>
+	<c:set var="tealiumUDO_productCategory" value="${emsNameLocalPrefix}" scope="request"/>
+
+	<c:if test="${ empty tealiumUDO_productCategory }">
+		<wcf:rest var="subCategory" url="${searchHostNamePath}${searchContextPath}/store/${WCParam.storeId}/categoryview/byId/${categoryId}" >	
+			<wcf:param name="langId" value="${WCParam.langId}"/>
+			<wcf:param name="currency" value="${env_currencyCode}"/>
+			<wcf:param name="responseFormat" value="json"/>		
+			<wcf:param name="catalogId" value="${WCParam.catalogId}"/>
+			<c:forEach var="contractId" items="${env_activeContractIds}">
+				<wcf:param name="contractId" value="${contractId}"/>
+			</c:forEach>
+		</wcf:rest>
+		<c:set var="tealiumUDO_productCategory" value="${fn:replace(subCategory.catalogGroupView[0].identifier,' ','')}" scope="request"/>
+	</c:if>
+
+	<c:set var="key1" value="${productId}+getCatalogEntryViewAllByID"/>
+	<c:set var="tealiumUDO_productBrand" value="${cachedCatalogEntryDetailsMap[key1].manufacturer}" scope="request"/>
+	<c:set var="tealiumUDO_productId" value="${productId}" scope="request"/>
+	<c:set var="tealiumUDO_productName" value="${cachedCatalogEntryDetailsMap[key1].name}" scope="request"/>
+	<c:set var="tealiumUDO_productSKU" value="${cachedCatalogEntryDetailsMap[key1].partNumber}" scope="request"/>
+	<%-- Optional: Only if it is preferred to get product Category from Attributes list --%>
+	<%--
+	<c:forEach items="${cachedCatalogEntryDetailsMap[key1].attributes}" var="tmpAttributes">
+		<c:if test="${ tmpAttributes.name == 'Category' }">
+			<c:set var="tealiumUDO_productCategory" value="${tmpAttributes.values[0].value}" scope="request"/>
+		</c:if>
+	</c:forEach>
+	--%>
+	<c:forEach items="${cachedCatalogEntryDetailsMap[key1].price}" var="tmpPrice">
+		<c:if test="${ tmpPrice.usage == 'Display' }">
+			<c:set var="tealiumUDO_productListPrice" scope="request">
+				<fmt:formatNumber value="${tmpPrice.value}" type="number" groupingUsed="false" maxFractionDigits="2" minFractionDigits="2" />
+			</c:set>
+		</c:if>
+		<c:if test="${ tmpPrice.usage == 'Offer' }">
+			<c:set var="tealiumUDO_productUnitPrice" scope="request">
+				<fmt:formatNumber value="${tmpPrice.value}" type="number" groupingUsed="false" maxFractionDigits="2" minFractionDigits="2" />
+			</c:set>	
+		</c:if>
+	</c:forEach>
+	<%-- Defensive code to make sure there is a value --%>
+	<c:if test="${ empty tealiumUDO_productCategory }">
+		<c:set var="tealiumUDO_productCategory" value="none" scope="request"/>
+	</c:if>
+	<c:if test="${ empty tealiumUDO_productUnitPrice }">
+		<c:set var="tealiumUDO_productUnitPrice" value="0.00" scope="request"/>
+		<c:set var="tealiumUDO_productListPrice" value="0.00" scope="request"/>
+	</c:if>
+	<%
+        dataLayer.addArrayValues(TealiumHelper.ProductPageUDO.PredefinedUDOFields.PRODUCT_BRAND, Arrays.asList((String)request.getAttribute("tealiumUDO_productBrand")))
+				 .addArrayValues(TealiumHelper.ProductPageUDO.PredefinedUDOFields.PRODUCT_CATEGORY, Arrays.asList((String)request.getAttribute("tealiumUDO_productCategory")))
+				 .addArrayValues(TealiumHelper.ProductPageUDO.PredefinedUDOFields.PRODUCT_ID, Arrays.asList((String)request.getAttribute("tealiumUDO_productId")))
+				 .addArrayValues(TealiumHelper.ProductPageUDO.PredefinedUDOFields.PRODUCT_LIST_PRICE, Arrays.asList((String)request.getAttribute("tealiumUDO_productListPrice")))
+				 .addArrayValues(TealiumHelper.ProductPageUDO.PredefinedUDOFields.PRODUCT_NAME, Arrays.asList((String)request.getAttribute("tealiumUDO_productName")))
+				 .addArrayValues(TealiumHelper.ProductPageUDO.PredefinedUDOFields.PRODUCT_SKU, Arrays.asList((String)request.getAttribute("tealiumUDO_productSKU")))
+				 .addArrayValues(TealiumHelper.ProductPageUDO.PredefinedUDOFields.PRODUCT_UNIT_PRICE, Arrays.asList((String)request.getAttribute("tealiumUDO_productUnitPrice")));
+    %>
+</c:if>
+<%-- Page Name Adjustments for Checkout flow pages --%>
+<%-- Page Name adjustment on Cart Page --%>
+<c:if test="${ shoppingCartPage == 'true' }">
+	<c:set var="tealiumUDO_pageName" value="cart" scope="request" />
+</c:if>
+<%-- Optional: Custom Page Name Adjustment for other checkout pages --%>
+<%--
+<c:if test="${ tealiumUDO_pageName == 'ordershippingbillingview' }">
+	<c:set var="tealiumUDO_pageName" value="shipping billing" scope="request" />
+</c:if>
+
+<c:if test="${ tealiumUDO_pageName == 'ordershippingbillingconfirmationview' }">
+	<c:set var="tealiumUDO_pageName" value="confirmation" scope="request" />
+</c:if>
+
+<c:if test="${ not empty guestChkout && fn:join(guestChkout,'') == '1' }">
+	<c:set var="tealiumUDO_pageName" value="guest checkout address" scope="request" />
+</c:if>
+--%>
+<%
+	dataLayer.setValue(TealiumHelper.HomePageUDO.PredefinedUDOFields.PAGE_NAME, (String)request.getAttribute("tealiumUDO_pageName"));
+%>
+<%-- Get Product Details (in Cart/Order.) Gets product name and other details from a lookup --%>
+<%-- FUTURE: Add product-level coupon code discounts --%>
+<c:if test="${ not empty order }">
+
+	<%-- Try to get it from  internal hashMap --%>
+	<jsp:useBean id="missingCatentryIdsMap" class="java.util.HashMap"/>
+	<c:if test="${itemDetailsInThisOrder == null}">
+		<jsp:useBean id="itemDetailsInThisOrder" class="java.util.HashMap" scope="request"/>
+	</c:if>
+	<c:forEach var="orderItem0" items="${order.orderItem}">
+		<c:set var="aCatEntry" value="${itemDetailsInThisOrder[orderItem0.productId]}"/>
+		<c:if test="${empty aCatEntry}">
+			<c:set property="${orderItem0.productId}" value="${orderItem0.productId}" target="${missingCatentryIdsMap}"/>
+		</c:if>
+	</c:forEach>
+	<c:if test="${!empty missingCatentryIdsMap}">
+		<wcf:rest var="missingCatEntryInOrder" url="${searchHostNamePath}${searchContextPath}/store/${WCParam.storeId}/productview/byIds" >
+			<c:forEach var="missingCatEntryId" items="${missingCatentryIdsMap}">
+				<wcf:param name="id" value="${missingCatEntryId.value}"/>
+			</c:forEach>
+			<wcf:param name="langId" value="${langId}" />
+			<wcf:param name="currency" value="${env_currencyCode}" />
+			<wcf:param name="responseFormat" value="json" />
+			<wcf:param name="catalogId" value="${WCParam.catalogId}" />
+			<wcf:param name="profileName" value="IBM_findProductByIds_Summary_WithNoEntitlementCheck" />
+		</wcf:rest>
+	</c:if>
+	<c:forEach var="aCatEntry" items="${missingCatEntryInOrder.catalogEntryView}">
+		<c:set property="${aCatEntry.uniqueID}" value="${aCatEntry}" target="${itemDetailsInThisOrder}"/>
+	</c:forEach>
+	<c:remove var="missingCatentryIdsMap"/>
+	
+	<c:set var="tmpCatalogEntryView" value="${itemDetailsInThisOrder}" scope="request"/>
+	
+	<jsp:useBean id="tmpProductLookupMap" class="java.util.HashMap" scope="request" />
+	
+	<c:forEach items="${tmpCatalogEntryView}" var="tmpCatalogEntry">
+				<c:set target="${tmpProductLookupMap}" property="${tmpCatalogEntry.key}/name" value="${tmpCatalogEntry.value.name}"/>
+				<c:set target="${tmpProductLookupMap}" property="${tmpCatalogEntry.key}/shortDescription" value="${tmpCatalogEntry.value.shortDescription}"/>
+				<c:set target="${tmpProductLookupMap}" property="${tmpCatalogEntry.key}/manufacturer" value="${tmpCatalogEntry.value.manufacturer}"/>
+				<c:forEach items="${tmpCatalogEntry.value.price}" var="tmpPrice">
+					<c:set target="${tmpProductLookupMap}" property="${tmpCatalogEntry.key}/price/${tmpPrice.usage}" value="${tmpPrice.value}"/>
+				</c:forEach>
+	</c:forEach>
+
+	<%-- TBD: Remove all temporary variables? --%>
+	<%-- <c:remove var="tmpCatalogEntryView"/> --%>
+    <%-- FUTURE: Get Product Category for items in cart/order--%>
+	<c:forEach var="orderItem" items="${order.orderItem}" varStatus="status">
+			<c:set var="tmpProductQuantity" scope="request">
+				<fmt:formatNumber value="${orderItem.quantity}" type="number" groupingUsed="false" maxFractionDigits="0" />
+			</c:set>
+			<c:set var="tmpProductId" value="${orderItem.productId}" scope="request"/>
+			<c:set var="tmpProductUnitPrice" scope="request">
+				<fmt:formatNumber value="${orderItem.unitPrice}" type="number" groupingUsed="false" maxFractionDigits="2" minFractionDigits="2" />
+			</c:set>
+			<c:set var="key1" value="${tmpProductId}/name"/>
+			<c:set var="tmpProductName" value="${tmpProductLookupMap[key1]}" scope="request"/>
+			<c:set var="key1" value="${tmpProductId}/manufacturer"/>
+			<c:set var="tmpProductBrand" value="${tmpProductLookupMap[key1]}" scope="request"/>
+			<c:set var="key1" value="${tmpProductId}/price/Display"/>
+			<c:set var="tmpProductListPrice" scope="request">
+				<fmt:formatNumber value="${tmpProductLookupMap[key1]}" type="number" groupingUsed="false" maxFractionDigits="2" minFractionDigits="2" />
+			</c:set>
+			<c:set var="tmpProductSKU" value="${orderItem.partNumber}" scope="request"/>
+			<%
+				dataLayer.addArrayValues(TealiumHelper.CartPageUDO.PredefinedUDOFields.PRODUCT_ID, (String)request.getAttribute("tmpProductId"))
+						 .addArrayValues(TealiumHelper.CartPageUDO.PredefinedUDOFields.PRODUCT_UNIT_PRICE, (String)request.getAttribute("tmpProductUnitPrice"))
+						 .addArrayValues(TealiumHelper.CartPageUDO.PredefinedUDOFields.PRODUCT_SKU, (String)request.getAttribute("tmpProductSKU"))
+						 .addArrayValues(TealiumHelper.CartPageUDO.PredefinedUDOFields.PRODUCT_BRAND, (String)request.getAttribute("tmpProductBrand"))
+						 .addArrayValues(TealiumHelper.CartPageUDO.PredefinedUDOFields.PRODUCT_LIST_PRICE, (String)request.getAttribute("tmpProductListPrice"))
+						 .addArrayValues(TealiumHelper.CartPageUDO.PredefinedUDOFields.PRODUCT_NAME, (String)request.getAttribute("tmpProductName"))
+						 .addArrayValues(TealiumHelper.CartPageUDO.PredefinedUDOFields.PRODUCT_QUANTITY, (String)request.getAttribute("tmpProductQuantity"));
+			%>
+	</c:forEach>
+</c:if>
+<%-- Order Thank You Page --%>
+<c:if test="${ not empty order && order.resourceName == 'order' }">
+	<c:set var="tealiumUDO_orderId" value="${order.orderId}" scope="request" />
+	<c:set var="tealiumUDO_orderPaymentType" value="${order.paymentInstruction[0].payMethodId}" scope="request" />
+	<c:set var="tealiumUDO_orderDiscount" scope="request">
+		<fmt:formatNumber value="${order.totalAdjustment}" type="number" groupingUsed="false" minFractionDigits="2" maxFractionDigits="2" />
+	</c:set>
+	<c:set var="tealiumUDO_orderCurrency" value="${order.grandTotalCurrency}" scope="request" />
+	<c:set var="tealiumUDO_orderTotal" scope="request">
+		<fmt:formatNumber value="${order.grandTotal}" type="number" groupingUsed="false" minFractionDigits="2" maxFractionDigits="2" />
+	</c:set>
+	<c:set var="tealiumUDO_orderShipping" scope="request">
+		<fmt:formatNumber value="${order.totalShippingCharge}" type="number" groupingUsed="false" minFractionDigits="2" maxFractionDigits="2" />
+	</c:set>
+	<c:set var="tealiumUDO_orderSalesTax" scope="request">
+		<fmt:formatNumber value="${order.totalSalesTax}" type="number" groupingUsed="false" minFractionDigits="2" maxFractionDigits="2" />
+	</c:set>
+	<c:set var="tealiumUDO_orderSubTotal" scope="request">
+		<fmt:formatNumber value="${tealiumUDO_orderTotal - tealiumUDO_orderSalesTax - tealiumUDO_orderShipping}" type="number" groupingUsed="false" minFractionDigits="2" maxFractionDigits="2" />
+	</c:set>
+	<%
+		dataLayer.setValue(TealiumHelper.ConfirmationPageUDO.PredefinedUDOFields.ORDER_CURRENCY, (String)request.getAttribute("tealiumUDO_orderCurrency"))
+				 .setValue(TealiumHelper.ConfirmationPageUDO.PredefinedUDOFields.ORDER_DISCOUNT, (String)request.getAttribute("tealiumUDO_orderDiscount"))
+				 .setValue(TealiumHelper.ConfirmationPageUDO.PredefinedUDOFields.ORDER_ID, (String)request.getAttribute("tealiumUDO_orderId"))
+				 .setValue(TealiumHelper.ConfirmationPageUDO.PredefinedUDOFields.ORDER_PAYMENT_TYPE, (String)request.getAttribute("tealiumUDO_orderPaymentType"))
+				 .setValue(TealiumHelper.ConfirmationPageUDO.PredefinedUDOFields.ORDER_SHIPPING, (String)request.getAttribute("tealiumUDO_orderShipping"))
+				 .setValue(TealiumHelper.ConfirmationPageUDO.PredefinedUDOFields.ORDER_SUBTOTAL, (String)request.getAttribute("tealiumUDO_orderSubTotal"))
+				 .setValue(TealiumHelper.ConfirmationPageUDO.PredefinedUDOFields.ORDER_TAX, (String)request.getAttribute("tealiumUDO_orderSalesTax"))
+				 .setValue(TealiumHelper.ConfirmationPageUDO.PredefinedUDOFields.ORDER_TOTAL, (String)request.getAttribute("tealiumUDO_orderTotal"));
+	%>
+</c:if>
+<%-- Customer Info --%>
+<c:if test="${ not empty userId }">
+	<c:set var="tealiumUDO_customerId" value="${userId}" scope="request"/>
+	<%
+		dataLayer.setValue(TealiumHelper.ConfirmationPageUDO.PredefinedUDOFields.CUSTOMER_ID, (String)request.getAttribute("tealiumUDO_customerId").toString());
+	%>
+</c:if>
+<c:if test="${ not empty person && not empty person.contact && not empty person.contact[0] }">
+	<c:set var="tealiumUDO_customerEmail" value="${person.contact[0].email1}" scope="request"/>
+	<%
+		dataLayer.setValue(TealiumHelper.ConfirmationPageUDO.PredefinedUDOFields.CUSTOMER_EMAIL, (String)request.getAttribute("tealiumUDO_customerEmail"));
+	%>
+</c:if>
+<%-- Build Data Layer UDO object for display in TealiumUDO_UI.jspf--%>
+<%
+	pageContext.setAttribute("tealiumUDO", tealiumHelper.outputUDOJson(dataLayer));
+%>

@@ -1,0 +1,118 @@
+Sample Data Layers on Specific pages in Aurora store
+
+// Search Results Page
+// --> Validate data layer contains details around a search
+// Data points: search_results, search_keyword
+
+// /webapp/wcs/stores/servlet/SearchDisplay?categoryId=&storeId=10152&catalogId=10052&langId=-1&sType=SimpleSearch&resultCatEntryType=2&showResultsPage=true&searchSource=Q&pageView=&beginIndex=0&pageSize=12&searchTerm=fancy+product#facet:&productBeginIndex:0&orderBy:&pageView:grid&minPrice:&maxPrice:&pageSize:&
+
+var utag_data = {
+	"search_results_displayed":"2",
+	"store_name":"AuroraESite",
+	"site_currency":"USD",
+	"page_type":"search",
+	"view_task_name":"SearchDisplayView",
+	"site_region":"US",
+	"page_category":"browse",
+	"search_keyword":"fancy product",
+	"search_keyword_displayed":"fancy product",
+	"bread_crumb":"Home;Search: fancy product",
+	"store_id":"10152",
+	"page_name":"searchdisplay",
+	"page_category_name":"",
+	"customer_id":"2002",
+	"search_results":"2"
+}
+
+
+
+// Product Detail Page
+// --> Validate data layer contains product-specific details around item being viewed
+// Data points: product_id, product_name, product_unit_price
+
+// URL: webapp/wcs/stores/servlet/en/auroraesite/grocery/vegetables/assorted-peppers
+
+var utag_data = {
+	"site_currency":"USD",
+	"store_name":"AuroraESite",
+	"page_type":"product",
+	"product_id":["12750"],
+	"view_task_name":"ProductDisplayView",
+	"site_region":"US",
+	"product_sku":["GVE034_3403"],
+	"product_category":["Vegetables"],
+	"page_category":"browse",
+	"bread_crumb":"Home;Grocery;Vegetables;Assorted Peppers",
+	"product_brand":["Oxford Orchards"],
+	"product_list_price":["2.89"],
+	"store_id":"10152",
+	"product_name":["Assorted Peppers"],
+	"page_name":"catalogentrypage",
+	"page_category_name":"Vegetables",
+	"customer_id":"-1002",
+	"product_unit_price":["2.49"]
+}
+
+
+
+// Cart View Page
+// --> Validate data layer contains product-specific details around items in card
+// Data points: product_id, product_name, product_unit_price (multiple items in these arrays for multiple items in cart)
+
+var utag_data = {
+	"site_currency":"USD",
+	"store_name":"AuroraESite",
+	"page_type":"checkout",
+	"product_id":["12751","12769"],
+	"view_task_name":"AjaxOrderItemDisplayView",
+	"site_region":"US",
+	"product_sku":["GVE034_340301","HVT038_380101"],
+	"page_category":"checkout",
+	"bread_crumb":"",
+	"product_brand":["Oxford Orchards","VitaVerve"],
+	"product_list_price":["2.89","8.00"],
+	"store_id":"10152",
+	"product_name":["Assorted Peppers","VitaVerve Prenatal Vitamin Bar"],
+	"product_quantity":["1","15"],
+	"page_name":"cart",
+	"page_category_name":"",
+	"customer_id":"2002",
+	"product_unit_price":["2.49","8.00"]
+}
+
+// Order Confirmation Page
+// --> Validate data layer contains order-specific details around products purchased
+// Data points: order_id, order_total, product_id, product_name, product_quantity, product_unit_price (multiple items in these arrays for multiple items purchased)
+
+// URL: /webapp/wcs/stores/servlet/OrderShippingBillingConfirmationView?storeId=10152&catalogId=10052&langId=-1&orderId=12002&shipmentTypeId=1
+
+var utag_data = {
+	"site_currency":"USD",
+	"product_sku":["GVE034_340301","HVT038_380101"],
+	"order_discount":"-12.25",
+	"order_total":"110.24",
+	"order_subtotal":"110.24",
+	"product_name":["Assorted Peppers","VitaVerve Prenatal Vitamin Bar"],
+	"product_quantity":["1","15"],
+	"customer_id":"2002",
+	"product_unit_price":["2.49","8.00"],
+	"order_currency":"USD",
+	"order_payment_type":"BillMeLater",
+	"store_name":"AuroraESite",
+	"page_type":"checkout",
+	"product_id":["12751","12769"],
+	"view_task_name":"OrderShippingBillingConfirmationView",
+	"order_id":"12002",
+	"site_region":"US",
+	"page_category":"checkout",
+	"bread_crumb":"",
+	"product_brand":["Oxford Orchards","VitaVerve"],
+	"product_list_price":["2.89","8.00"],
+	"store_id":"10152",
+	"order_tax":"0.00",
+	"page_name":"ordershippingbillingconfirmationview",
+	"customer_email":"testing@testing123.com",
+	"page_category_name":"",
+	"order_shipping":"0.00"
+}
+

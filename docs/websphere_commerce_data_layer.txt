@@ -1,0 +1,118 @@
+These are the page-level and E-commerce data sources for the IBM Websphere Commerce platform. The IBM Websphere Commerce platform automatically populates these values for you. The extension renders the utag.js script element asynchronously and exposes server-side data in a javascript data layer object to be consumed by the Tealium utag library.
+
+
+Customer Email
+customer_email:" ",
+Contains the customer email.
+
+Customer ID
+customer_id:" ",
+Contains the customer ID (userId).
+
+Store ID
+store_id:" ",
+Contains the store ID.
+
+Order Currency
+order_currency:" ",
+Contains order currency.
+
+Order Discount
+order_discount:" ",
+Contains order discount (if any).
+
+Order ID
+order_id:" ",
+Contains the order or transaction ID.
+
+Order Payment Type
+order_payment_type:" ",
+Contains the order payment type.
+
+Order Shipping
+order_shipping:" ",
+Contains the order shipping value.
+
+Order Subtotal
+order_subtotal:" ",
+Contains the order subtotal (not containing taxes & shipping).
+
+Order Tax
+order_tax:" ",
+Contains the order tax amount.
+
+Order Total
+order_total:" ",
+Contains the order total value.
+
+Page Category
+page_category_name:" ",
+Contains a user-friendly page category, e.g. 'appliance page'.
+
+Page Name
+page_name:" ",
+Contains a user-friendly name for the page.
+
+Page Type
+page_type:" ",
+Contains a user-friendly page type, e.g. 'cart'.
+
+Product Brand
+product_brand:[" "," "],
+Contains product brand(s) - multiple values should be comma-separated.
+
+Product Category
+product_category:[" "," "],
+Contains product category(s) - multiple values should be comma-separated.
+
+Product Discount
+product_discount:[" "," "],
+Contains product discount(s) - multiple values should be comma-separated.
+
+Product ID
+product_id:[" "," "],
+Contains product ID(s) - multiple values should be comma-separated.
+
+Product List Price
+product_list_price:[" "," "],
+Contains product list price(s) before discount - multiple values should be comma-separated.
+
+Product Name
+product_name:[" "," "],
+Contains product name(s) - multiple values should be comma-separated.
+
+Product Quantity
+product_quantity:[" "," "],
+Contains product quantity(s) - multiple values should be comma-separated.
+
+Product SKU
+product_sku:[" "," "],
+Contains product SKU(s) - multiple values should be comma-separated.
+
+Product Unit Price
+product_unit_price:[" "," "],
+Contains product unit price(s) - multiple values should be comma-separated.
+
+Search Term
+search_keyword:" "
+Contains the search term or query submitted by a visitor.
+
+Search Results
+search_results:" ",
+Contains the number of results returned with a search query.
+
+Search Term Displayed,
+search_keyword_displayed:" "
+Contains the search term displayed to user (when match not found for actual term).
+
+Search Results Displayed
+search_results_displayed:" ",
+Contains the number of results returned from Search Term Displayed search results.
+
+Site Currency
+site_currency:" ",
+Contains the site currency.
+
+Site Region
+site_region:" ",
+Contains the site region.

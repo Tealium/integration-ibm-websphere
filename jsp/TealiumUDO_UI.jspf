@@ -1,0 +1,19 @@
+<%--
+ =================================================================
+  Tealium UDO UI
+  
+  Outputs UDO and JavaScript code snippet
+ =================================================================
+--%>
+<script type="text/javascript">
+var utag_data = ${tealiumUDO}
+</script>
+
+<script type="text/javascript">
+    (function(a,b,c,d){
+    a='//tags.tiqcdn.com/utag/${tealiumAccount}/${tealiumProfile}/${tealiumEnvironment}/utag.js';
+    b=document;c='script';d=b.createElement(c);d.src=a;d.type='text/java'+c;d.async=true;
+    a=b.getElementsByTagName(c)[0];a.parentNode.insertBefore(d,a);
+    })();
+</script>
+
